@@ -15,8 +15,8 @@ import matplotlib as plt
 # ----------------------------
 eq.load_equilibrium("eq_fields.npz")
 
-
-geometry.build_coils()
+#polodial coils removed for clarity 
+#geometry.build_coils()
 geometry.build_wall_wireframe()
 
 
@@ -30,7 +30,7 @@ particles.init_particles(speed=7e5)
 # ----------------------------
 # DIAG
 # ----------------------------
-for step in range(100000):
+for step in range(1):
     particles.step_particles()
 
     if step % 1000 == 0:
@@ -51,7 +51,7 @@ for step in range(100000):
 # ----------------------------
 # Window / camera
 # ----------------------------
-window = ti.ui.Window("Tokamak particles", (1024, 768))
+window = ti.ui.Window("sim", (1024, 768))
 scene = window.get_scene()
 canvas = window.get_canvas()
 camera = ti.ui.Camera()
@@ -82,7 +82,7 @@ while window.running:
 
 
     # draw machine geometry
-    scene.lines(vertices=geometry.wall_verts, indices=geometry.wall_inds, width=1.2, color=(0.8, 0.8, 0.8))
+    scene.lines(vertices=geometry.wall_verts, indices=geometry.wall_inds, width=1.2, color=(0.2, 0.8, 1.0))
     scene.lines(vertices=geometry.coils_verts, indices=geometry.coils_inds, width=2.0, color=(0.2, 0.8, 1.0))
 
     # draw particle
@@ -91,4 +91,5 @@ while window.running:
     canvas.set_background_color((0.05, 0.05, 0.05))
     canvas.scene(scene)
     window.show()
+
 
