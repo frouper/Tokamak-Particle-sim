@@ -1,7 +1,7 @@
 import numpy as np
 import taichi as ti
 
-# These will be set by load_equilibrium()
+# declares
 NR = 0
 NZ = 0
 ti_BR = None
@@ -12,11 +12,9 @@ ti_Zmin = None
 ti_inv_dR = None
 ti_inv_dZ = None
 
+#load eq from freegs solve 
 def load_equilibrium(npz_path="eq_fields.npz"):
-    """
-    Call this ONCE, AFTER ti.init(), before launching kernels that use B_cartesian().
-    Allocates Taichi fields and copies BR/BZ/Bphi and grid metadata.
-    """
+   
     global NR, NZ, ti_BR, ti_BZ, ti_Bphi, ti_Rmin, ti_Zmin, ti_inv_dR, ti_inv_dZ
 
     data = np.load(npz_path)
@@ -29,13 +27,13 @@ def load_equilibrium(npz_path="eq_fields.npz"):
     NR = R.shape[0]
     NZ = Z.shape[0]
 
-    # Assumes uniform grids (true for most gfiles; validate once if unsure)
+    
     dR = float(R[1] - R[0])
     dZ = float(Z[1] - Z[0])
     Rmin = float(R[0])
     Zmin = float(Z[0])
 
-    # Allocate Taichi fields
+    #creating taichi fields
     ti_BR = ti.field(dtype=ti.f32, shape=(NR, NZ))
     ti_BZ = ti.field(dtype=ti.f32, shape=(NR, NZ))
     ti_Bphi = ti.field(dtype=ti.f32, shape=(NR, NZ))
@@ -44,7 +42,7 @@ def load_equilibrium(npz_path="eq_fields.npz"):
     ti_BZ.from_numpy(BZ)
     ti_Bphi.from_numpy(Bphi)
 
-    # Scalar metadata fields
+    
     ti_Rmin = ti.field(dtype=ti.f32, shape=())
     ti_Zmin = ti.field(dtype=ti.f32, shape=())
     ti_inv_dR = ti.field(dtype=ti.f32, shape=())
@@ -56,6 +54,7 @@ def load_equilibrium(npz_path="eq_fields.npz"):
     ti_inv_dZ[None] = 1.0 / dZ
 
 
+#bilinear for B grid
 @ti.func
 def interp2d_uniform(Rq: ti.f32, Zq: ti.f32, F) -> ti.f32:
     # Convert to grid coordinates

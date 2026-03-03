@@ -15,7 +15,7 @@ import matplotlib as plt
 # ----------------------------
 eq.load_equilibrium("eq_fields.npz")
 
-#polodial coils removed for clarity 
+
 #geometry.build_coils()
 geometry.build_wall_wireframe()
 
@@ -28,7 +28,7 @@ wall_inds  = geometry.wall_inds
 particles.init_particles(speed=7e5)
 
 # ----------------------------
-# DIAG
+# testing
 # ----------------------------
 for step in range(1):
     particles.step_particles()
@@ -49,9 +49,9 @@ for step in range(1):
 
 
 # ----------------------------
-# Window / camera
+# window setup
 # ----------------------------
-window = ti.ui.Window("sim", (1024, 768))
+window = ti.ui.Window("Tokamak particles", (1980, 1280))
 scene = window.get_scene()
 canvas = window.get_canvas()
 camera = ti.ui.Camera()
@@ -64,7 +64,7 @@ camera.up(0.0, 0.0, 1.0)
 
 
 # ----------------------------
-# Main loop
+# runtime
 # ----------------------------
 while window.running:
     # advance + record
@@ -73,7 +73,7 @@ while window.running:
        
 
     
-    # camera + lighting
+    # camera
     camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
     scene.set_camera(camera)
 
@@ -82,14 +82,15 @@ while window.running:
 
 
     # draw machine geometry
-    scene.lines(vertices=geometry.wall_verts, indices=geometry.wall_inds, width=1.2, color=(0.2, 0.8, 1.0))
+    scene.lines(vertices=geometry.wall_verts, indices=geometry.wall_inds, width=1.2, color=(0.8, 0.8, 0.8))
     scene.lines(vertices=geometry.coils_verts, indices=geometry.coils_inds, width=2.0, color=(0.2, 0.8, 1.0))
 
     # draw particle
-    scene.particles(particles.pos, radius=0.005, color=(225.0, 35.0, 42.0))
+    scene.particles(particles.pos, radius=0.01, color=(0.2, 0.8, 1.0))
+    particles.build_tail_lines()
+    scene.lines(vertices=particles.tail_verts, indices=particles.tail_inds, width=1.0, color=(1.0, 0.4, 0.1))
 
     canvas.set_background_color((0.05, 0.05, 0.05))
     canvas.scene(scene)
     window.show()
-
 

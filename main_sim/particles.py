@@ -7,12 +7,10 @@ import equilibrium_taichi as eq
 
 
 # ----------------------------
-# Particle params
+# particle params
 # ----------------------------
 
-#Change number of particles here
-N_PART = 50
-
+N_PART = 1
 
 dt = 1e-8
 qm = 4.79e7
@@ -22,6 +20,11 @@ pos   = ti.Vector.field(3, ti.f32, shape=N_PART)
 vel   = ti.Vector.field(3, ti.f32, shape=N_PART)
 alive = ti.field(ti.i32, shape=N_PART)
 
+TAIL_LEN = 5000
+
+tail_pos = ti.Vector.field(3, ti.f32, shape=(N_PART, TAIL_LEN))
+tail_head = ti.field(ti.i32, shape=N_PART)  
+
 
 diag_phi  = ti.field(ti.f32, shape=())
 diag_vpar = ti.field(ti.f32, shape=())
@@ -29,7 +32,7 @@ diag_Bmag = ti.field(ti.f32, shape=())
 diag_phi_gc = ti.field(ti.f32, shape=())
 
 # ----------------------------
-# Wall (Miller geometry)
+# tokamak shape
 # ----------------------------
 R0 = 0.9
 a  = 0.7
@@ -72,7 +75,9 @@ def inside_poloidal(Rq: ti.f32, Zq: ti.f32) -> ti.i32:
 def B_equilibrium(pos: ti.types.vector(3, ti.f32)) -> ti.types.vector(3, ti.f32):
     return eq.B_cartesian(pos.x, pos.y, pos.z)
 
-
+# ----------------------------
+# particle integrator
+# ----------------------------
 @ti.func
 def boris_push(v, B):
     t = 0.5 * qm_dt * B
@@ -99,6 +104,10 @@ def init_particles(speed: ti.f32):
             alive[p] = 0
 
         pos[p] = ti.Vector([x, y, z])
+
+        for i in range(TAIL_LEN):
+            tail_pos[p, i] = ti.Vector([x, y, z])
+            tail_head[p] = 0
 
         # random velocity direction
         vx = ti.random() - 0.5
@@ -132,6 +141,36 @@ def step_particles():
 
         pos[p] = x
         vel[p] = v
+        h = tail_head[p]
+        tail_pos[p, h] = x
+        tail_head[p] = (h + 1) % TAIL_LEN
+
+tail_verts = ti.Vector.field(3, ti.f32, shape=(N_PART * TAIL_LEN))
+tail_inds  = ti.field(ti.i32, shape=(N_PART * TAIL_LEN, 2))
+
+@ti.kernel
+def build_tail_lines():
+    for p in range(N_PART):
+        for i in range(TAIL_LEN - 1):
+            h  = (tail_head[p] + i    ) % TAIL_LEN
+            hn = (tail_head[p] + i + 1) % TAIL_LEN
+            idx = p * TAIL_LEN + i
+
+            tail_verts[idx] = tail_pos[p, h]
+
+            if alive[p] == 1:
+                tail_inds[idx, 0] = idx
+                tail_inds[idx, 1] = idx + 1  
+            else:
+                tail_inds[idx, 0] = idx  
+                tail_inds[idx, 1] = idx
+
+        
+        last_idx = p * TAIL_LEN + TAIL_LEN - 1
+        h = (tail_head[p] + TAIL_LEN - 1) % TAIL_LEN
+        tail_verts[last_idx] = tail_pos[p, h]
+        tail_inds[last_idx, 0] = last_idx
+        tail_inds[last_idx, 1] = last_idx  
 
 
 
@@ -160,7 +199,6 @@ def diagnostic_guiding_center(p: ti.i32):
 
     diag_phi_gc[None] = ti.atan2(Xgc.y, Xgc.x)
     
-
 
 
 

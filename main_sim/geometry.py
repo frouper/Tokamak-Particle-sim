@@ -4,7 +4,7 @@ import math
 
 
 # ----------------------------
-# Manual MAST PF coil geometry (R, Z)
+# Geometry from MASTU
 # ----------------------------
 pf_coils = [
     (0.49,  1.76), (0.49, -1.76),   # P2
@@ -16,7 +16,7 @@ pf_coils = [
 
 rings = pf_coils
 
-# TORUS STRUCTURE
+# D shape 
 N_COILS = len(rings)
 R0 = 0.9
 a  = 0.7
@@ -24,7 +24,7 @@ d  = 0.5
 k  = 1.9
 
 
-WALL_RES = 128 #points per ring
+WALL_RES = 1000 #points per ring
 
 N_POLODIAL = 12 # number of polodial rings (WALL)
 N_TORODIAL = 12 # number of torodial rings (WALL)
@@ -35,7 +35,7 @@ N_COILS_RES = 256
 N_VERTS = N_COILS * N_COILS_RES
 
 # ----------------------------
-# Taichi buffers (same pattern as your old project)
+# construction 
 # ----------------------------
 
 # COILS 
@@ -52,8 +52,9 @@ N_WALL_VERTS = WALL_RES * (N_POLODIAL + N_TORODIAL)
 
 wall_verts = ti.Vector.field(3, dtype=ti.f32, shape=N_WALL_VERTS)
 wall_inds  = ti.field(dtype=ti.i32, shape=(N_WALL_VERTS , 2))
+
 # ----------------------------
-# Build toroidal rings
+# coils (MASTU geo)
 # ----------------------------
 
 @ti.kernel
@@ -77,13 +78,10 @@ def build_coils():
             coils_inds[idx, 1] = next_idx
 
 
-
-#BUILD "WALL" MESH
-
 @ti.kernel
 def build_wall_wireframe():
     # --------------------------------
-    # Poloidal rings (vertical D-shapes)
+    # Poloidal rings 
     # --------------------------------
     for p in range(N_POLODIAL):
         phi = 2.0 * math.pi * p / N_POLODIAL
@@ -110,7 +108,7 @@ def build_wall_wireframe():
             wall_inds[idx, 1] = nxt
 
     # --------------------------------
-    # Toroidal rings (horizontal circles)
+    # Toroidal rings 
     # --------------------------------
     offset = N_POLODIAL * WALL_RES
 
